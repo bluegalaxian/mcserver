@@ -8,19 +8,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Create Server Folder
+      - name: Create server folder
         run: mkdir server
 
-      - name: Download PaperMC
+      - name: Download Paper
         run: |
           cd server
           wget https://api.papermc.io/v2/projects/paper/versions/1.21.5/builds/24/downloads/paper-1.21.5-24.jar -O paper.jar
@@ -30,7 +28,19 @@ jobs:
           cd server
           echo "eula=true" > eula.txt
 
-      - name: Start Server
+      - name: Download Playit
+        run: |
+          wget https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64 -O playit
+          chmod +x playit
+
+      - name: Start Playit
+        env:
+          SECRET_KEY: ${{ secrets.PLAYIT_SECRET }}
+        run: |
+          ./playit --secret $SECRET_KEY &
+          sleep 15
+
+      - name: Start Minecraft
         run: |
           cd server
           java -Xms2G -Xmx2G -jar paper.jar nogui
