@@ -37,9 +37,11 @@ jobs:
           sudo apt update
           sudo apt install playit -y
 
-      - name: Start Playit
+            - name: Start Playit
         run: |
-          playit &
+          nohup playit > playit.log 2>&1 &
+          sleep 20
+          cat playit.log
 
       - name: Start Minecraft Server
         run: |
