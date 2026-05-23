@@ -15,18 +15,23 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Setup Server
+      - name: Setup Minecraft Server
         run: |
           mkdir server
           cd server
           wget https://api.papermc.io/v2/projects/paper/versions/1.21.5/builds/24/downloads/paper-1.21.5-24.jar -O paper.jar
           echo "eula=true" > eula.txt
 
-      - name: Install Playit
+      - name: Download Playit
         run: |
-          curl -fsSL https://playit.gg/install.sh | bash
+          wget https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64
+          chmod +x playit-linux-amd64
 
-      - name: Run Playit
+      - name: Start Playit
         run: |
-          playit
-          
+          ./playit-linux-amd64
+
+      - name: Start Minecraft Server
+        run: |
+          cd server
+          java -Xms2G -Xmx2G -jar paper.jar nogui
