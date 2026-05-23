@@ -39,9 +39,9 @@ jobs:
 
       - name: Start Playit
         run: |
-          nohup playit > playit.log 2>&1 &
-          sleep 20
-          cat playit.log
+          sudo systemctl start playit
+          sleep 15
+          sudo journalctl -u playit --no-pager -n 50
 
       - name: Start Minecraft Server
         run: |
