@@ -1,41 +1,59 @@
-name: Minecraft Server
+name: PaperMC Server + Plugins + Cloudflare Tunnel
 
 on:
   workflow_dispatch:
 
 jobs:
-  minecraft:
+  server:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Install Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Setup Minecraft Server
+      - name: Install Java + tools
         run: |
-          mkdir server
-          cd server
-          wget https://api.papermc.io/v2/projects/paper/versions/1.21.5/builds/24/downloads/paper-1.21.5-24.jar -O paper.jar
+          sudo apt update
+          sudo apt install -y openjdk-17-jre wget curl unzip
+
+      - name: Create Minecraft Server
+        run: |
+          mkdir mc
+          cd mc
+
+          wget -O server.jar https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/400/downloads/paper-1.20.4-400.jar
+
           echo "eula=true" > eula.txt
+          mkdir -p plugins
 
-      - name: Download Playit
+      - name: Download Plugins (FIXED STABLE SOURCES)
         run: |
-          wget https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64
-          chmod +x playit-linux-amd64
+          cd mc/plugins
 
-      - name: Start Playit
-        run: |
-          mkdir -p /tmp/playit
-          export PLAYIT_SOCKET_PATH=/tmp/playit/playit.sock
-          ./playit-linux-amd64
+          # EssentialsX (stable GitHub release)
+          wget -O EssentialsX.jar https://github.com/EssentialsX/Essentials/releases/download/2.21.0/EssentialsX-2.21.0.jar
+          wget -O EssentialsXChat.jar https://github.com/EssentialsX/Essentials/releases/download/2.21.0/EssentialsXChat-2.21.0.jar
+          wget -O EssentialsXSpawn.jar https://github.com/EssentialsX/Essentials/releases/download/2.21.0/EssentialsXSpawn-2.21.0.jar
 
-      - name: Start Minecraft Server
+          # ViaVersion stack (stable CI builds)
+          wget -O ViaVersion.jar https://ci.viaversion.com/job/ViaVersion/lastSuccessfulBuild/artifact/build/libs/ViaVersion.jar
+          wget -O ViaBackwards.jar https://ci.viaversion.com/job/ViaBackwards/lastSuccessfulBuild/artifact/build/libs/ViaBackwards.jar
+          wget -O ViaRewind.jar https://ci.viaversion.com/job/ViaRewind/lastSuccessfulBuild/artifact/build/libs/ViaRewind.jar
+
+          # AuthMe Reloaded (stable build)
+          wget -O AuthMe.jar https://ci.codemc.io/job/AuthMe/job/AuthMeReloaded/lastSuccessfulBuild/artifact/target/AuthMe.jar
+
+      - name: Install Cloudflared
         run: |
-          cd server
-          java -Xms2G -Xmx2G -jar paper.jar nogui
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+          chmod +x cloudflared
+          sudo mv cloudflared /usr/local/bin/
+
+      - name: Start Server + Tunnel
+        run: |
+          cd mc
+
+          # Start Minecraft server
+          java -Xmx2G -Xms1G -jar server.jar nogui &
+
+          sleep 20
+
+          # Cloudflare tunnel (REQUIRES SECRET)
+          cloudflared tunnel run --token ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
